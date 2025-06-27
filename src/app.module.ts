@@ -4,9 +4,10 @@ import { AppService } from './app.service';
 import { PrismaService } from './prisma/prisma.service';
 import { BookModule } from './book/book.module';
 import { AuthorModule } from './author/author.module';
+import { FileUploadModule } from './file-upload/file-upload.module';
 
 @Module({
-  imports: [BookModule, AuthorModule],
+  imports: [BookModule, AuthorModule, FileUploadModule],
   controllers: [AppController],
   providers: [AppService, PrismaService],
   exports: [PrismaService],
