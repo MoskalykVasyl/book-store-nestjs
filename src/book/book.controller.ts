@@ -8,15 +8,19 @@ import {
   Param,
   Patch,
   Post,
+  UseGuards,
 } from '@nestjs/common';
 import { BookService } from './book.service';
 import { CreateBookDto } from './dto/createBook.dto';
 import { UpdateBookDto } from './dto/updateBook.dto';
+import { JwtAuthGuard } from 'src/auth/guard/jwt-auth.guard';
 
 @Controller('books')
 export class BookController {
   constructor(private readonly bookService: BookService) {}
 
+  @UseGuards(JwtAuthGuard)
+  @HttpCode(HttpStatus.CREATED)
   @Post()
   createBook(@Body() createBookDto: CreateBookDto) {
     return this.bookService.createBook(createBookDto);
