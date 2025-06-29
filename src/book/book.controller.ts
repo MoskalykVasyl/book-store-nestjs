@@ -14,12 +14,16 @@ import { BookService } from './book.service';
 import { CreateBookDto } from './dto/createBook.dto';
 import { UpdateBookDto } from './dto/updateBook.dto';
 import { JwtAuthGuard } from 'src/auth/guard/jwt-auth.guard';
+import { Roles } from 'src/auth/decorators/roles.decorators';
+import { UserRole } from '@prisma/client';
+import { RoleGuard } from 'src/auth/guard/roles.guard';
 
 @Controller('books')
 export class BookController {
   constructor(private readonly bookService: BookService) {}
 
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, RoleGuard)
+  @Roles(UserRole.ADMIN)
   @HttpCode(HttpStatus.CREATED)
   @Post()
   createBook(@Body() createBookDto: CreateBookDto) {
@@ -44,6 +48,8 @@ export class BookController {
     return this.bookService.deleteBook(id);
   }
 
+  @UseGuards(JwtAuthGuard, RoleGuard)
+  @Roles(UserRole.ADMIN)
   @Patch(':id')
   @HttpCode(HttpStatus.OK)
   updateBook(@Param('id') id: string, @Body() updateBookDto: UpdateBookDto) {

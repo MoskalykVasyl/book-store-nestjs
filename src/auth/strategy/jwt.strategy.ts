@@ -12,7 +12,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
       secretOrKey: jwtConstants.secret,
     });
   }
-
+  //повертає те, що буде в req.user
   async validate(payload) {
     return payload;
   }

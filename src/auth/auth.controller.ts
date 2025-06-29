@@ -17,10 +17,4 @@ export class AuthController {
   async register(@Body() registerUserDto: RegisterUserDto) {
     return this.authService.register(registerUserDto);
   }
-
-  // @UseGuards(JwtAuthGuard)
-  // @Get('profile')
-  // async getProfile(@Request() req) {
-  //   return req.user;
-  // }
 }
