@@ -8,6 +8,7 @@ import {
   Param,
   Patch,
   Post,
+  Query,
   UseGuards,
 } from '@nestjs/common';
 import { BookService } from './book.service';
@@ -17,31 +18,33 @@ import { JwtAuthGuard } from 'src/auth/guard/jwt-auth.guard';
 import { Roles } from 'src/auth/decorators/roles.decorators';
 import { UserRole } from '@prisma/client';
 import { RoleGuard } from 'src/auth/guard/roles.guard';
+import { GetBooksByGenreDto } from './dto/getBooksByGenre.dto';
 
 @Controller('books')
 export class BookController {
   constructor(private readonly bookService: BookService) {}
 
   @UseGuards(JwtAuthGuard, RoleGuard)
-  @Roles(UserRole.ADMIN)
+  // @Roles(UserRole.ADMIN)
   @HttpCode(HttpStatus.CREATED)
   @Post()
   createBook(@Body() createBookDto: CreateBookDto) {
     return this.bookService.createBook(createBookDto);
   }
 
-  @Get()
+  @Get('get-all')
   @HttpCode(HttpStatus.OK)
   getAllBooks() {
     return this.bookService.getAllBooks();
   }
 
-  @Get(':id')
+  @Get('by-id/:id')
   @HttpCode(HttpStatus.OK)
   getBook(@Param('id') id: string) {
     return this.bookService.getBookById(id);
   }
-
+  @UseGuards(JwtAuthGuard, RoleGuard)
+  @Roles(UserRole.ADMIN)
   @Delete(':id')
   @HttpCode(HttpStatus.OK)
   deleteBook(@Param('id') id: string) {
@@ -55,5 +58,17 @@ export class BookController {
   updateBook(@Param('id') id: string, @Body() updateBookDto: UpdateBookDto) {
     console.log(updateBookDto);
     return this.bookService.updateBook(id, updateBookDto);
+  }
+
+  @Get('search')
+  @HttpCode(HttpStatus.OK)
+  searchBooks(@Query('keyword') keyword: string) {
+    return this.bookService.searchBooks(keyword);
+  }
+
+  @Get('filter')
+  @HttpCode(HttpStatus.OK)
+  getBooksByGenre(@Query() genre: GetBooksByGenreDto) {
+    return this.bookService.getBooksByGenre(genre);
   }
 }

@@ -7,24 +7,21 @@ import { Book, Prisma } from '@prisma/client';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { CreateBookDto } from './dto/createBook.dto';
 import { UpdateBookDto } from './dto/updateBook.dto';
+import { GetBooksByGenreDto } from './dto/getBooksByGenre.dto';
 
 @Injectable()
 export class BookService {
+  private readonly includeAuthor = { author: true };
   constructor(private prismaService: PrismaService) {}
 
   async createBook(createBookDto: CreateBookDto): Promise<Book> {
-    try {
-      return this.prismaService.book.create({
-        data: createBookDto,
-      });
-    } catch (error) {
-      console.log(error);
-      throw new InternalServerErrorException('Failed to add book to store');
-    }
+    return this.prismaService.book.create({
+      data: createBookDto,
+    });
   }
 
   async getAllBooks(): Promise<Book[]> {
-    return this.prismaService.book.findMany({ include: { author: true } });
+    return this.prismaService.book.findMany({ include: this.includeAuthor });
   }
 
   async getBookById(id: string): Promise<Book> {
@@ -67,5 +64,30 @@ export class BookService {
       }
       throw new InternalServerErrorException('Failed to update book');
     }
+  }
+
+  async searchBooks(keyword: string): Promise<Book[]> {
+    const bookList = await this.prismaService.book.findMany({
+      where: {
+        title: { contains: keyword, mode: 'insensitive' },
+      },
+    });
+    if (bookList.length === 0) {
+      throw new NotFoundException('No books found for the given keyword');
+    }
+    return bookList;
+  }
+
+  async getBooksByGenre(data: GetBooksByGenreDto): Promise<Book[]> {
+    const bookList = await this.prismaService.book.findMany({
+      where: {
+        genre: { equals: data.genre },
+      },
+    });
+
+    if (bookList.length === 0) {
+      throw new NotFoundException('This genre have not books yet');
+    }
+    return bookList;
   }
 }
