@@ -30,4 +30,15 @@ export class UserService {
   async createUser(createUserDto: RegisterUserDto): Promise<User> {
     return this.prismaService.user.create({ data: createUserDto });
   }
+
+  async updateRefreshToken(userId: string, updatedRefreshToken: string | null) {
+    const user = await this.findById(userId);
+    if (!user) {
+      throw new NotFoundException('user not found!');
+    }
+    await this.prismaService.user.update({
+      where: { id: userId },
+      data: { refreshToken: updatedRefreshToken },
+    });
+  }
 }
