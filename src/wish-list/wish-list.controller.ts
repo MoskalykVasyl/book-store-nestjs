@@ -1,4 +1,4 @@
-import { Body, Controller, Put, UseGuards } from '@nestjs/common';
+import { Body, Controller, Param, Patch, Put, UseGuards } from '@nestjs/common';
 import { WishListService } from './wish-list.service';
 import { CurrentUser } from 'src/auth/decorators/current-user.decorators';
 import { JwtAuthGuard } from 'src/auth/guard/jwt-auth.guard';
@@ -11,5 +11,14 @@ export class WishListController {
   @Put('add-book')
   addBook(@Body('bookId') bookId: string, @CurrentUser('id') userId: string) {
     return this.wishListService.addBook(bookId, userId);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Patch('remove-book/:bookId')
+  removeBook(
+    @Param('bookId') bookId: string,
+    @CurrentUser('id') userId: string,
+  ) {
+    return this.wishListService.removeBook(bookId, userId);
   }
 }

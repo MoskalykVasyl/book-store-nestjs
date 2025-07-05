@@ -1,5 +1,4 @@
-import { Injectable } from '@nestjs/common';
-import { WishList } from '@prisma/client';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from 'src/prisma/prisma.service';
 
 @Injectable()
@@ -17,11 +16,20 @@ export class WishListService {
     });
   }
 
-  private async createWishList(userId: string): Promise<WishList> {
-    return this.prismaService.wishList.create({
-      data: {
-        userId: userId,
-      },
+  async removeBook(bookId: string, userId: string) {
+    const wishList = await this.prismaService.wishList.findUnique({
+      where: { userId: userId },
+    });
+
+    if (!wishList) {
+      throw new NotFoundException('Wish list not found for this user!');
+    }
+
+    const updatedList = wishList.bookIdList.filter((id) => id !== bookId);
+
+    return this.prismaService.wishList.update({
+      where: { userId: userId },
+      data: { bookIdList: updatedList },
     });
   }
 }
