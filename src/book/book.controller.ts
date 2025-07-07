@@ -25,7 +25,7 @@ export class BookController {
   constructor(private readonly bookService: BookService) {}
 
   @UseGuards(JwtAuthGuard, RoleGuard)
-  // @Roles(UserRole.ADMIN)
+  @Roles(UserRole.ADMIN)
   @HttpCode(HttpStatus.CREATED)
   @Post()
   createBook(@Body() createBookDto: CreateBookDto) {
