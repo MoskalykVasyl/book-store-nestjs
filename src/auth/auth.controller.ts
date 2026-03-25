@@ -1,6 +1,7 @@
 import {
   Body,
   Controller,
+  ForbiddenException,
   Get,
   Post,
   Req,
@@ -14,10 +15,15 @@ import { Request, Response } from 'express';
 import { AuthRequest } from './types/interfaces';
 import { CurrentUser } from './decorators/current-user.decorators';
 import { JwtAuthGuard } from './guard/jwt-auth.guard';
+import { JwtService } from '@nestjs/jwt';
+import { strict } from 'assert';
 
 @Controller('auth')
 export class AuthController {
-  constructor(private readonly authService: AuthService) {}
+  constructor(
+    private readonly authService: AuthService,
+    private jwtService: JwtService,
+  ) {}
 
   @UseGuards(LocalAuthGuard)
   @Post('login')
@@ -43,5 +49,28 @@ export class AuthController {
     @CurrentUser('id') userId: string,
   ) {
     return this.authService.logout(res, userId);
+  }
+
+  @Get('refresh-token')
+  async refresh(
+    @Req() req: Request,
+    @Res({ passthrough: true }) res: Response,
+  ) {
+    const refreshToken = req.cookies['refresh_token'];
+
+    if (!refreshToken) {
+      throw new ForbiddenException('No refresh token!');
+    }
+
+    const payload = this.jwtService.verify(refreshToken);
+
+    const tokens = await this.authService.refresh(payload.id, refreshToken);
+
+    res.cookie('refresh_token', tokens.refresh_token, {
+      httpOnly: true,
+      secure: true,
+      sameSite: 'strict',
+    });
+    return { accessToken: tokens.access_token };
   }
 }
