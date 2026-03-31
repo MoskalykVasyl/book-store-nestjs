@@ -3,6 +3,8 @@ import {
   Controller,
   ForbiddenException,
   Get,
+  HttpCode,
+  HttpStatus,
   Post,
   Req,
   Res,
@@ -16,7 +18,7 @@ import { AuthRequest } from './types/interfaces';
 import { CurrentUser } from './decorators/current-user.decorators';
 import { JwtAuthGuard } from './guard/jwt-auth.guard';
 import { JwtService } from '@nestjs/jwt';
-import { strict } from 'assert';
+
 
 @Controller('auth')
 export class AuthController {
@@ -27,6 +29,7 @@ export class AuthController {
 
   @UseGuards(LocalAuthGuard)
   @Post('login')
+  @HttpCode(HttpStatus.OK)
   async login(
     @Req() req: AuthRequest,
     @Res({ passthrough: true }) res: Response,
@@ -72,5 +75,11 @@ export class AuthController {
       sameSite: 'strict',
     });
     return { accessToken: tokens.access_token };
+  }
+
+  @Get('me')
+  @UseGuards(JwtAuthGuard)
+  async getMe(@CurrentUser('id') userId: string) {
+    return this.authService.getMe(userId);
   }
 }

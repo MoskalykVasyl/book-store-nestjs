@@ -12,6 +12,8 @@ import { AccessToken, Token } from './types/interfaces';
 import { RegisterUserDto } from './dto/register.dto';
 import { jwtConstants } from './constants';
 import { Response } from 'express';
+import { plainToInstance } from 'class-transformer';
+import { UserResponseDto } from './dto/userResponse.dto';
 
 @Injectable()
 export class AuthService {
@@ -111,5 +113,16 @@ export class AuthService {
     });
 
     return { access_token };
+  }
+
+  async getMe(userId: string) {
+    const user = await this.userService.findById(userId);
+    if (!user) {
+      throw new NotFoundException('User not Found!');
+    }
+
+    return plainToInstance(UserResponseDto, user, {
+      excludeExtraneousValues: true,
+    });
   }
 }
