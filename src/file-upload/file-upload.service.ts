@@ -1,14 +1,16 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
+import cloudinary from './cloudinary/config';
+import { UploadApiResponse } from 'cloudinary';
 
 @Injectable()
 export class FileUploadService {
-  handleFileUpload(file: Express.Multer.File) {
+  async handleFileUpload(file: Express.Multer.File) {
     if (!file) {
       throw new BadRequestException('no file uploaded');
     }
 
     // validate file type
-    const allowedMimeTypes = ['image/jpeg', 'image/png', 'application/pdf'];
+    const allowedMimeTypes = ['image/jpeg', 'image/png'];
     if (!allowedMimeTypes.includes(file.mimetype)) {
       throw new BadRequestException('invalid file type');
     }
@@ -19,6 +21,25 @@ export class FileUploadService {
       throw new BadRequestException('file is too large!');
     }
 
-    return { message: 'File uploaded successfully', filePath: file.path };
+    //upload to cloudinary
+    const result = await new Promise<UploadApiResponse>((resolve, reject) => {
+      cloudinary.uploader
+        .upload_stream(
+          {
+            folder: 'book-store',
+          },
+          (error, result) => {
+            if (error) return reject(new Error(error.message));
+            if (!result) return reject(new Error('Upload failed!'));
+            resolve(result);
+          },
+        )
+        .end(file.buffer);
+    });
+
+    return {
+      message: 'File uploaded successfully',
+      url: result.secure_url,
+    };
   }
 }
