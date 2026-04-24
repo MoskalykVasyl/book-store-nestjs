@@ -27,10 +27,18 @@ export class BookService {
   async getAllBooks(
     userId: string,
   ): Promise<(Book & { isFavorite: boolean })[]> {
-    const wishList = await this.wishListService.getWishListByUserId(userId);
     const bookList = await this.prismaService.book.findMany({
       include: this.includeAuthor,
     });
+
+    if (!userId) {
+      return bookList.map((book) => ({
+        ...book,
+        isFavorite: false,
+      }));
+    }
+
+    const wishList = await this.wishListService.getWishListByUserId(userId);
 
     const favoriteIds = new Set(wishList.bookIdList);
 
