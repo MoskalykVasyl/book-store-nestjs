@@ -8,11 +8,15 @@ import { PrismaService } from 'src/prisma/prisma.service';
 import { CreateBookDto } from './dto/createBook.dto';
 import { UpdateBookDto } from './dto/updateBook.dto';
 import { GetBooksByGenreDto } from './dto/getBooksByGenre.dto';
+import { WishListService } from 'src/wish-list/wish-list.service';
 
 @Injectable()
 export class BookService {
   private readonly includeAuthor = { author: true };
-  constructor(private prismaService: PrismaService) {}
+  constructor(
+    private prismaService: PrismaService,
+    private wishListService: WishListService,
+  ) {}
 
   async createBook(createBookDto: CreateBookDto): Promise<Book> {
     return this.prismaService.book.create({
@@ -20,8 +24,20 @@ export class BookService {
     });
   }
 
-  async getAllBooks(): Promise<Book[]> {
-    return this.prismaService.book.findMany({ include: this.includeAuthor });
+  async getAllBooks(
+    userId: string,
+  ): Promise<(Book & { isFavorite: boolean })[]> {
+    const wishList = await this.wishListService.getWishListByUserId(userId);
+    const bookList = await this.prismaService.book.findMany({
+      include: this.includeAuthor,
+    });
+
+    const favoriteIds = new Set(wishList.bookIdList);
+
+    return bookList.map((book) => ({
+      ...book,
+      isFavorite: favoriteIds.has(book.id),
+    }));
   }
 
   async getBookById(id: string): Promise<Book> {
