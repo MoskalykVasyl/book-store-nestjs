@@ -19,6 +19,7 @@ import { Roles } from 'src/auth/decorators/roles.decorators';
 import { UserRole } from '@prisma/client';
 import { RoleGuard } from 'src/auth/guard/roles.guard';
 import { GetBooksByGenreDto } from './dto/getBooksByGenre.dto';
+import { CurrentUser } from 'src/auth/decorators/current-user.decorators';
 
 @Controller('books')
 export class BookController {
@@ -34,8 +35,8 @@ export class BookController {
 
   @Get('get-all')
   @HttpCode(HttpStatus.OK)
-  getAllBooks() {
-    return this.bookService.getAllBooks();
+  getAllBooks(@CurrentUser('id') userId: string) {
+    return this.bookService.getAllBooks(userId);
   }
 
   @Get('by-id/:id')
