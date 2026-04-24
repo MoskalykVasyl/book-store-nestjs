@@ -20,6 +20,7 @@ import { UserRole } from '@prisma/client';
 import { RoleGuard } from 'src/auth/guard/roles.guard';
 import { GetBooksByGenreDto } from './dto/getBooksByGenre.dto';
 import { CurrentUser } from 'src/auth/decorators/current-user.decorators';
+import { OptionalJwtAuthGuard } from 'src/auth/guard/optional-jwt-auth.guard';
 
 @Controller('books')
 export class BookController {
@@ -33,9 +34,10 @@ export class BookController {
     return this.bookService.createBook(createBookDto);
   }
 
+  @UseGuards(OptionalJwtAuthGuard)
   @Get('get-all')
   @HttpCode(HttpStatus.OK)
-  getAllBooks(@CurrentUser('id') userId: string) {
+  getAllBooks(@CurrentUser('id') userId?: string) {
     return this.bookService.getAllBooks(userId);
   }
 

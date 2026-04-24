@@ -25,7 +25,7 @@ export class BookService {
   }
 
   async getAllBooks(
-    userId: string,
+    userId?: string,
   ): Promise<(Book & { isFavorite: boolean })[]> {
     const bookList = await this.prismaService.book.findMany({
       include: this.includeAuthor,
