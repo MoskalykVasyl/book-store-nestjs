@@ -1,40 +1,76 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
-import { WishList } from '@prisma/client';
+import {
+  Injectable,
+  NotFoundException,
+  BadRequestException,
+} from '@nestjs/common';
 import { PrismaService } from 'src/prisma/prisma.service';
 
 @Injectable()
 export class WishListService {
   constructor(private readonly prismaService: PrismaService) {}
 
+  private async getOrCreateWishList(userId: string) {
+    let wishList = await this.prismaService.wishList.findUnique({
+      where: { userId },
+    });
+
+    if (!wishList) {
+      wishList = await this.prismaService.wishList.create({
+        data: {
+          userId,
+          bookIdList: [],
+        },
+      });
+    }
+
+    return wishList;
+  }
+
   async addBook(bookId: string, userId: string) {
-    return this.prismaService.wishList.upsert({
-      where: { userId: userId },
-      update: { bookIdList: { push: bookId } },
-      create: {
-        userId: userId,
-        bookIdList: [bookId],
+    const wishList = await this.getOrCreateWishList(userId);
+
+    if (wishList.bookIdList.includes(bookId)) {
+      throw new BadRequestException('Book already in wishlist');
+    }
+
+    return this.prismaService.wishList.update({
+      where: { userId },
+      data: {
+        bookIdList: {
+          push: bookId,
+        },
       },
     });
   }
 
   async removeBook(bookId: string, userId: string) {
-    const wishList = await this.getWishListByUserId(userId);
-    if (wishList) {
-      const updatedList = wishList.bookIdList.filter((id) => id !== bookId);
+    const wishList = await this.prismaService.wishList.findUnique({
+      where: { userId },
+    });
 
-      return this.prismaService.wishList.update({
-        where: { userId: userId },
-        data: { bookIdList: updatedList },
-      });
+    if (!wishList) {
+      throw new NotFoundException('Wishlist not found');
     }
+
+    if (!wishList.bookIdList.includes(bookId)) {
+      throw new NotFoundException('Book not in wishlist');
+    }
+
+    const updatedList = wishList.bookIdList.filter((id) => id !== bookId);
+
+    return this.prismaService.wishList.update({
+      where: { userId },
+      data: { bookIdList: updatedList },
+    });
   }
 
-  async getWishListByUserId(userId: string): Promise<WishList> {
+  async getWishListByUserId(userId: string) {
     const wishList = await this.prismaService.wishList.findUnique({
-      where: { userId: userId },
+      where: { userId },
     });
+
     if (!wishList) {
-      throw new NotFoundException('Wish list not found for this user!');
+      throw new NotFoundException('Wish list not found');
     }
 
     return wishList;

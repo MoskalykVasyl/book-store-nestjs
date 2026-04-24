@@ -1,10 +1,9 @@
 import {
-  Body,
   Controller,
+  Delete,
   Get,
   Param,
-  Patch,
-  Put,
+  Post,
   UseGuards,
 } from '@nestjs/common';
 import { WishListService } from './wish-list.service';
@@ -16,13 +15,13 @@ export class WishListController {
   constructor(private readonly wishListService: WishListService) {}
 
   @UseGuards(JwtAuthGuard)
-  @Put('add-book')
-  addBook(@Body('bookId') bookId: string, @CurrentUser('id') userId: string) {
+  @Post('books/:bookId')
+  addBook(@Param('bookId') bookId: string, @CurrentUser('id') userId: string) {
     return this.wishListService.addBook(bookId, userId);
   }
 
   @UseGuards(JwtAuthGuard)
-  @Patch('remove-book/:bookId')
+  @Delete('books/:bookId')
   removeBook(
     @Param('bookId') bookId: string,
     @CurrentUser('id') userId: string,
@@ -31,7 +30,7 @@ export class WishListController {
   }
 
   @UseGuards(JwtAuthGuard)
-  @Get('by-userId')
+  @Get()
   getWishList(@CurrentUser('id') userId: string) {
     return this.wishListService.getWishListByUserId(userId);
   }
