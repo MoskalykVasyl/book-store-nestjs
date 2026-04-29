@@ -3,11 +3,16 @@ import {
   NotFoundException,
   BadRequestException,
 } from '@nestjs/common';
+import { Book } from '@prisma/client';
+import { BookService } from 'src/book/book.service';
 import { PrismaService } from 'src/prisma/prisma.service';
 
 @Injectable()
 export class WishListService {
-  constructor(private readonly prismaService: PrismaService) {}
+  constructor(
+    private readonly prismaService: PrismaService,
+    private readonly bookService: BookService,
+  ) {}
 
   private async getOrCreateWishList(userId: string) {
     let wishList = await this.prismaService.wishList.findUnique({
@@ -72,7 +77,11 @@ export class WishListService {
     if (!wishList) {
       throw new NotFoundException('Wish list not found');
     }
+    const books = await this.getBooksInWishList(wishList.bookIdList);
+    return books;
+  }
 
-    return wishList;
+  async getBooksInWishList(bookIdList: string[]): Promise<Book[]> {
+    return await this.bookService.getListBooksByIds(bookIdList);
   }
 }

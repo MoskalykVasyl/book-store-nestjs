@@ -9,5 +9,6 @@ import { WishListService } from 'src/wish-list/wish-list.service';
   imports: [AuthModule],
   controllers: [BookController],
   providers: [BookService, PrismaService, WishListService],
+  exports: [BookService],
 })
 export class BookModule {}

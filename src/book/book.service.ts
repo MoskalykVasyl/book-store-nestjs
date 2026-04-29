@@ -59,6 +59,19 @@ export class BookService {
     return book;
   }
 
+  async getListBooksByIds(ids: string[]): Promise<Book[]> {
+    return this.prismaService.book.findMany({
+      where: {
+        id: {
+          in: ids,
+        },
+        include: {
+          author: true,
+        },
+      },
+    });
+  }
+
   async deleteBook(id: string) {
     try {
       return this.prismaService.book.delete({ where: { id } });
