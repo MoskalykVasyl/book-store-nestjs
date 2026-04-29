@@ -48,6 +48,19 @@ export class BookService {
     }));
   }
 
+  async getBooksInWishList(userId: string): Promise<Book[]> {
+    const wishList = await this.wishListService.getWishListByUserId(userId);
+    const books = this.prismaService.book.findMany({
+      where: {
+        id: {
+          in: wishList.bookIdList,
+        },
+      },
+      include: { author: true },
+    });
+    return books;
+  }
+
   async getBookById(id: string): Promise<Book> {
     const book = await this.prismaService.book.findUnique({
       where: { id },
@@ -65,9 +78,9 @@ export class BookService {
         id: {
           in: ids,
         },
-        include: {
-          author: true,
-        },
+      },
+      include: {
+        author: true,
       },
     });
   }
