@@ -41,6 +41,13 @@ export class BookController {
     return this.bookService.getAllBooks(userId);
   }
 
+  @UseGuards(JwtAuthGuard)
+  @Get('wish-list')
+  @HttpCode(HttpStatus.OK)
+  getBooksInWishList(@CurrentUser('id') userId: string) {
+    return this.bookService.getBooksInWishList(userId);
+  }
+
   @Get('by-id/:id')
   @HttpCode(HttpStatus.OK)
   getBook(@Param('id') id: string) {
