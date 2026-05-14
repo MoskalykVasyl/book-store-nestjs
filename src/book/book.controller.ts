@@ -18,9 +18,9 @@ import { JwtAuthGuard } from 'src/auth/guard/jwt-auth.guard';
 import { Roles } from 'src/auth/decorators/roles.decorators';
 import { UserRole } from '@prisma/client';
 import { RoleGuard } from 'src/auth/guard/roles.guard';
-import { GetBooksByGenreDto } from './dto/getBooksByGenre.dto';
 import { CurrentUser } from 'src/auth/decorators/current-user.decorators';
 import { OptionalJwtAuthGuard } from 'src/auth/guard/optional-jwt-auth.guard';
+import { genreMap } from './constants/genre-map';
 
 @Controller('books')
 export class BookController {
@@ -76,9 +76,11 @@ export class BookController {
     return this.bookService.searchBooks(keyword);
   }
 
-  @Get('filter')
+  @UseGuards(OptionalJwtAuthGuard)
+  @Get()
   @HttpCode(HttpStatus.OK)
-  getBooksByGenre(@Query() genre: GetBooksByGenreDto) {
-    return this.bookService.getBooksByGenre(genre);
+  getBooks(@Query('genre') genre?: string, @CurrentUser('id') userId?: string) {
+    const formattedGenre = genre ? genreMap[genre.toLowerCase()] : undefined;
+    return this.bookService.getBooks(formattedGenre, userId);
   }
 }
