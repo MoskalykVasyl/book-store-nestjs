@@ -3,11 +3,10 @@ import {
   InternalServerErrorException,
   NotFoundException,
 } from '@nestjs/common';
-import { Book, Prisma } from '@prisma/client';
+import { Book, Genre, Prisma } from '@prisma/client';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { CreateBookDto } from './dto/createBook.dto';
 import { UpdateBookDto } from './dto/updateBook.dto';
-import { GetBooksByGenreDto } from './dto/getBooksByGenre.dto';
 import { WishListService } from 'src/wish-list/wish-list.service';
 
 @Injectable()
@@ -31,18 +30,32 @@ export class BookService {
       include: this.includeAuthor,
     });
 
+    return this.addFavoriteField(bookList, userId);
+  }
+
+  async getBooks(genre?: Genre, userId?: string) {
+    if (!genre) {
+      return this.getAllBooks(userId);
+    }
+
+    return this.getBooksByGenre(genre, userId);
+  }
+
+  private async addFavoriteField(
+    books: Book[],
+    userId?: string,
+  ): Promise<(Book & { isFavorite: boolean })[]> {
     if (!userId) {
-      return bookList.map((book) => ({
+      return books.map((book) => ({
         ...book,
         isFavorite: false,
       }));
     }
 
     const wishList = await this.wishListService.getWishListByUserId(userId);
-
     const favoriteIds = new Set(wishList.bookIdList);
 
-    return bookList.map((book) => ({
+    return books.map((book) => ({
       ...book,
       isFavorite: favoriteIds.has(book.id),
     }));
@@ -133,16 +146,14 @@ export class BookService {
     return bookList;
   }
 
-  async getBooksByGenre(data: GetBooksByGenreDto): Promise<Book[]> {
-    const bookList = await this.prismaService.book.findMany({
+  async getBooksByGenre(genre: Genre, userId?: string): Promise<Book[]> {
+    const books = await this.prismaService.book.findMany({
       where: {
-        genre: { equals: data.genre },
+        genre,
       },
+      include: this.includeAuthor,
     });
 
-    if (bookList.length === 0) {
-      throw new NotFoundException('This genre have not books yet');
-    }
-    return bookList;
+    return this.addFavoriteField(books, userId);
   }
 }
