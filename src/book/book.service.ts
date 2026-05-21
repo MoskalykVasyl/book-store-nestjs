@@ -135,16 +135,39 @@ export class BookService {
   }
 
   async searchBooks(keyword: string): Promise<Book[]> {
-    const bookList = await this.prismaService.book.findMany({
-      where: {
-        title: { contains: keyword, mode: 'insensitive' },
-      },
-      include: { author: true },
-    });
-    if (bookList.length === 0) {
-      throw new NotFoundException('No books found for the given keyword');
+    const trimmedKeyword = keyword.trim();
+
+    if (!trimmedKeyword) {
+      return [];
     }
-    return bookList;
+
+    return this.prismaService.book.findMany({
+      where: {
+        OR: [
+          {
+            title: {
+              contains: trimmedKeyword,
+              mode: 'insensitive',
+            },
+          },
+
+          {
+            author: {
+              lastName: {
+                contains: trimmedKeyword,
+                mode: 'insensitive',
+              },
+            },
+          },
+        ],
+      },
+
+      include: {
+        author: true,
+      },
+
+      take: 5,
+    });
   }
 
   async getBooksByGenre(genre: Genre, userId?: string): Promise<Book[]> {
