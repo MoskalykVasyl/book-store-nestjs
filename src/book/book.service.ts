@@ -139,6 +139,7 @@ export class BookService {
       where: {
         title: { contains: keyword, mode: 'insensitive' },
       },
+      include: { author: true },
     });
     if (bookList.length === 0) {
       throw new NotFoundException('No books found for the given keyword');
