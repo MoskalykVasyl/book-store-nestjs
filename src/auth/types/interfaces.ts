@@ -4,10 +4,13 @@ export interface AccessToken {
   access_token: string;
 }
 
+export interface JwtPayload {
+  id: string;
+  email: string;
+  role: UserRole;
+}
 export interface RequestWithUser {
-  user: {
-    role: UserRole;
-  };
+  user: JwtPayload;
 }
 
 export interface AuthRequest extends Request {
