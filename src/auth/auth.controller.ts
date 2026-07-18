@@ -34,6 +34,7 @@ export class AuthController {
     @Req() req: AuthRequest,
     @Res({ passthrough: true }) res: Response,
   ) {
+    console.log('req.user', req.user);
     return this.authService.login(res, req.user);
   }
 
