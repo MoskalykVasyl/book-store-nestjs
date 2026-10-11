@@ -7,15 +7,12 @@ import { Book, Genre, Prisma } from '@prisma/client';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { CreateBookDto } from './dto/createBook.dto';
 import { UpdateBookDto } from './dto/updateBook.dto';
-import { WishListService } from 'src/wish-list/wish-list.service';
 
 @Injectable()
 export class BookService {
   private readonly includeAuthor = { author: true };
-  constructor(
-    private prismaService: PrismaService,
-    private wishListService: WishListService,
-  ) {}
+
+  constructor(private readonly prismaService: PrismaService) {}
 
   async createBook(createBookDto: CreateBookDto): Promise<Book> {
     return this.prismaService.book.create({
@@ -45,15 +42,21 @@ export class BookService {
     books: Book[],
     userId?: string,
   ): Promise<(Book & { isFavorite: boolean })[]> {
-    if (!userId) {
+    if (!userId || books.length === 0) {
       return books.map((book) => ({
         ...book,
         isFavorite: false,
       }));
     }
 
-    const wishList = await this.wishListService.getWishListByUserId(userId);
-    const favoriteIds = new Set(wishList.bookIdList);
+    const items = await this.prismaService.wishListItem.findMany({
+      where: {
+        userId,
+        bookId: { in: books.map((book) => book.id) },
+      },
+      select: { bookId: true },
+    });
+    const favoriteIds = new Set(items.map((item) => item.bookId));
 
     return books.map((book) => ({
       ...book,
@@ -64,17 +67,14 @@ export class BookService {
   async getBooksInWishList(
     userId: string,
   ): Promise<(Book & { isFavorite: boolean })[]> {
-    const wishList = await this.wishListService.getWishListByUserId(userId);
-    const books = await this.prismaService.book.findMany({
-      where: {
-        id: {
-          in: wishList.bookIdList,
-        },
-      },
-      include: { author: true },
+    const items = await this.prismaService.wishListItem.findMany({
+      where: { userId },
+      include: { book: { include: this.includeAuthor } },
+      orderBy: { createdAt: 'desc' },
     });
-    return books.map((book) => ({
-      ...book,
+
+    return items.map((item) => ({
+      ...item.book,
       isFavorite: true,
     }));
   }
@@ -82,30 +82,28 @@ export class BookService {
   async getBookById(id: string): Promise<Book> {
     const book = await this.prismaService.book.findUnique({
       where: { id },
-      include: { author: true },
+      include: this.includeAuthor,
     });
+
     if (!book) {
       throw new NotFoundException('Book not found!');
     }
+
     return book;
   }
 
   async getListBooksByIds(ids: string[]): Promise<Book[]> {
     return this.prismaService.book.findMany({
       where: {
-        id: {
-          in: ids,
-        },
+        id: { in: ids },
       },
-      include: {
-        author: true,
-      },
+      include: this.includeAuthor,
     });
   }
 
   async deleteBook(id: string) {
     try {
-      return this.prismaService.book.delete({ where: { id } });
+      return await this.prismaService.book.delete({ where: { id } });
     } catch (error) {
       if (
         error instanceof Prisma.PrismaClientKnownRequestError &&
@@ -119,7 +117,7 @@ export class BookService {
 
   async updateBook(id: string, updateBookDto: UpdateBookDto): Promise<Book> {
     try {
-      return this.prismaService.book.update({
+      return await this.prismaService.book.update({
         where: { id },
         data: updateBookDto,
       });
@@ -150,7 +148,6 @@ export class BookService {
               mode: 'insensitive',
             },
           },
-
           {
             author: {
               lastName: {
@@ -161,20 +158,17 @@ export class BookService {
           },
         ],
       },
-
-      include: {
-        author: true,
-      },
-
+      include: this.includeAuthor,
       take: 5,
     });
   }
 
-  async getBooksByGenre(genre: Genre, userId?: string): Promise<Book[]> {
+  async getBooksByGenre(
+    genre: Genre,
+    userId?: string,
+  ): Promise<(Book & { isFavorite: boolean })[]> {
     const books = await this.prismaService.book.findMany({
-      where: {
-        genre,
-      },
+      where: { genre },
       include: this.includeAuthor,
     });
 

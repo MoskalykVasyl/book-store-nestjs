@@ -1,10 +1,12 @@
+import 'dotenv/config';
 import { Genre, UserRole, PrismaClient } from '@prisma/client';
+import { PrismaPg } from '@prisma/adapter-pg';
 import * as bcrypt from 'bcrypt';
 
-const prisma = new PrismaClient({
-  datasources: { db: { url: process.env.PROD_DATABASE_URL } },
+const adapter = new PrismaPg({
+  connectionString: process.env.STAGING_DATABASE_URL,
 });
-
+const prisma = new PrismaClient({ adapter });
 type SeedBook = {
   title: string;
   price: number;
@@ -557,4 +559,4 @@ main()
     console.error(e);
     process.exit(1);
   })
-  .finally(() => prisma.$disconnect());
+  .finally(() => void prisma.$disconnect());
