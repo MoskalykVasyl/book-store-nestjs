@@ -1,7 +1,8 @@
 import { Genre, UserRole, PrismaClient } from '@prisma/client';
+import * as bcrypt from 'bcrypt';
 
 const prisma = new PrismaClient({
-  datasources: { db: { url: process.env.STAGING_DATABASE_URL } },
+  datasources: { db: { url: process.env.PROD_DATABASE_URL } },
 });
 
 type SeedBook = {
@@ -162,6 +163,8 @@ const data: SeedAuthor[] = [
         countPage: 432,
         genre: Genre.RomanceNovel,
         publicYear: '1813-01-28',
+        imageUrl:
+          'https://res.cloudinary.com/dpaemdwqa/image/upload/v1791729642/PrideAndPrejuce_i5f42t.jpg',
         description:
           'Pride and Prejudice is an 1813 romantic novel by Jane Austen. It charts the emotional development of protagonist Elizabeth Bennet, who learns the error of making hasty judgments and comes to appreciate the difference between the superficial and the essential. The comedy of the writing lies in the depiction of manners, education, marriage, and money during the British Regency period.',
       },
@@ -473,9 +476,16 @@ const users: SeedUser[] = [
     displayName: 'Regular',
     role: UserRole.REGULAR,
   },
+  {
+    email: 'test@gmail.com',
+    password: '123456',
+    displayName: 'Regular',
+    role: UserRole.REGULAR,
+  },
 ];
 
 async function main() {
+  console.log('Start seeding...');
   let authorsCreated = 0;
   let booksCreated = 0;
   let imagesUpdated = 0;
@@ -530,7 +540,9 @@ async function main() {
     });
 
     if (!exists) {
-      await prisma.user.create({ data: user });
+      const hashedPassword = await bcrypt.hash(user.password, 10);
+      await prisma.user.create({ data: { ...user, password: hashedPassword } });
+      console.log(hashedPassword);
       usersCreated++;
     }
   }
