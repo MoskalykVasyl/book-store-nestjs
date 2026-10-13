@@ -5,6 +5,7 @@ import * as bcrypt from 'bcrypt';
 
 const adapter = new PrismaPg({
   connectionString: process.env.STAGING_DATABASE_URL,
+  ssl: { rejectUnauthorized: false },
 });
 const prisma = new PrismaClient({ adapter });
 type SeedBook = {
