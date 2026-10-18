@@ -20,7 +20,7 @@ import { UserRole } from '@prisma/client';
 import { RoleGuard } from 'src/auth/guard/roles.guard';
 import { CurrentUser } from 'src/auth/decorators/current-user.decorators';
 import { OptionalJwtAuthGuard } from 'src/auth/guard/optional-jwt-auth.guard';
-import { genreMap } from './constants/genre-map';
+import { GetBooksDto } from './dto/getBooks.dto';
 
 @Controller('books')
 export class BookController {
@@ -32,13 +32,6 @@ export class BookController {
   @Post()
   createBook(@Body() createBookDto: CreateBookDto) {
     return this.bookService.createBook(createBookDto);
-  }
-
-  @UseGuards(OptionalJwtAuthGuard)
-  @Get('get-all')
-  @HttpCode(HttpStatus.OK)
-  getAllBooks(@CurrentUser('id') userId?: string) {
-    return this.bookService.getAllBooks(userId);
   }
 
   @UseGuards(JwtAuthGuard)
@@ -79,8 +72,7 @@ export class BookController {
   @UseGuards(OptionalJwtAuthGuard)
   @Get()
   @HttpCode(HttpStatus.OK)
-  getBooks(@Query('genre') genre?: string, @CurrentUser('id') userId?: string) {
-    const formattedGenre = genre ? genreMap[genre.toLowerCase()] : undefined;
-    return this.bookService.getBooks(formattedGenre, userId);
+  getBooks(@Query() query: GetBooksDto, @CurrentUser('id') userId?: string) {
+    return this.bookService.getBooks(query, userId);
   }
 }

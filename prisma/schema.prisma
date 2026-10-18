@@ -1,8 +1,3 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
-// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
 
 generator client {
   provider = "prisma-client-js"
@@ -10,24 +5,23 @@ generator client {
 
 datasource db {
   provider = "postgresql"
-  url      = env("POSTGRES_URI")
 }
 
 model User {
   id String @id @default(uuid())
 
-  email    String @unique
-  password String
+  email        String  @unique
+  password     String
   refreshToken String? @map("refresh_token")
 
   displayName String
   picture     String?
   role        UserRole @default(REGULAR)
 
-  wishList WishList?
+  wishListItems WishListItem[]
 
-  createdAt  DateTime   @default(now()) @map("created_at")
-  updatedAt  DateTime   @updatedAt @map("updated_at")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
 
   @@map("users")
 }
@@ -47,13 +41,16 @@ model Book {
   publicYear  DateTime @map("year_publication")
   description String
   imageUrl    String?  @map("image_url")
+
+  author   Author @relation(fields: [authorId], references: [id])
+  authorId String
   
-  author      Author   @relation(fields: [authorId], references: [id])
-  authorId    String
+  wishListItems WishListItem[]
 
-  createdAt DateTime @default(now()) @map("created_at")
-  updatedAt DateTime @updatedAt @map("updated_at")
+  createdAt     DateTime       @default(now()) @map("created_at")
+  updatedAt     DateTime       @updatedAt @map("updated_at")
 
+  @@index([authorId])
   @@map("books")
 }
 
@@ -82,16 +79,19 @@ model Author {
   @@map("authors")
 }
 
-model WishList {
+model WishListItem {
   id String @id @default(uuid())
 
-  bookIdList String[] @map("book_list")
+  userId String @map("user_id")
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  user   User   @relation(fields: [userId], references: [id])
-  userId String @unique @map("user_id")
+  bookId String @map("book_id")
+  book   Book   @relation(fields: [bookId], references: [id], onDelete: Cascade)
 
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
-  @@map("wish_list")
+  @@unique([userId, bookId])
+  @@index([bookId])
+  @@map("wish_list_items")
 }

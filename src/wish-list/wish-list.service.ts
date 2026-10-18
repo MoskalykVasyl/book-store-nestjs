@@ -1,77 +1,58 @@
 import {
+  BadRequestException,
   Injectable,
   NotFoundException,
-  BadRequestException,
 } from '@nestjs/common';
+import { Prisma } from '@prisma/client';
 import { PrismaService } from 'src/prisma/prisma.service';
 
 @Injectable()
 export class WishListService {
   constructor(private readonly prismaService: PrismaService) {}
 
-  private async getOrCreateWishList(userId: string) {
-    let wishList = await this.prismaService.wishList.findUnique({
-      where: { userId },
-    });
-
-    if (!wishList) {
-      wishList = await this.prismaService.wishList.create({
-        data: {
-          userId,
-          bookIdList: [],
-        },
-      });
-    }
-
-    return wishList;
-  }
-
   async addBook(bookId: string, userId: string) {
-    const wishList = await this.getOrCreateWishList(userId);
+    try {
+      return await this.prismaService.wishListItem.create({
+        data: { userId, bookId },
+        include: { book: true },
+      });
+    } catch (e) {
+      if (e instanceof Prisma.PrismaClientKnownRequestError) {
+        if (e.code === 'P2002') {
+          throw new BadRequestException('Book already in wishlist');
+        }
 
-    if (wishList.bookIdList.includes(bookId)) {
-      throw new BadRequestException('Book already in wishlist');
+        if (e.code === 'P2003') {
+          throw new NotFoundException('Book not found');
+        }
+      }
+      throw e;
     }
-
-    return this.prismaService.wishList.update({
-      where: { userId },
-      data: {
-        bookIdList: {
-          push: bookId,
-        },
-      },
-    });
   }
 
   async removeBook(bookId: string, userId: string) {
-    const wishList = await this.prismaService.wishList.findUnique({
-      where: { userId },
-    });
-
-    if (!wishList) {
-      throw new NotFoundException('Wishlist not found');
+    try {
+      return await this.prismaService.wishListItem.delete({
+        where: { userId_bookId: { userId, bookId } },
+      });
+    } catch (e) {
+      if (
+        e instanceof Prisma.PrismaClientKnownRequestError &&
+        e.code === 'P2025'
+      ) {
+        throw new NotFoundException('Book not in wishlist');
+      }
+      throw e;
     }
-
-    if (!wishList.bookIdList.includes(bookId)) {
-      throw new NotFoundException('Book not in wishlist');
-    }
-
-    const updatedList = wishList.bookIdList.filter((id) => id !== bookId);
-
-    return this.prismaService.wishList.update({
-      where: { userId },
-      data: { bookIdList: updatedList },
-    });
   }
 
   async getWishListByUserId(userId: string) {
-    const wishList = await this.prismaService.wishList.findUnique({
+    const items = await this.prismaService.wishListItem.findMany({
       where: { userId },
+      include: { book: true },
+      orderBy: { createdAt: 'desc' },
     });
 
-    if (!wishList) {
-      throw new NotFoundException('Wish list not found');
-    }
-    return wishList;
+    return items.map((item) => item.book);
   }
 }
