@@ -8,9 +8,18 @@ import { FileUploadModule } from './file-upload/file-upload.module';
 import { UserModule } from './user/user.module';
 import { AuthModule } from './auth/auth.module';
 import { WishListModule } from './wish-list/wish-list.module';
+import { OrderModule } from './order/order.module';
 
 @Module({
-  imports: [BookModule, AuthorModule, FileUploadModule, UserModule, AuthModule, WishListModule],
+  imports: [
+    BookModule,
+    AuthorModule,
+    FileUploadModule,
+    UserModule,
+    AuthModule,
+    WishListModule,
+    OrderModule,
+  ],
   controllers: [AppController],
   providers: [AppService, PrismaService],
   exports: [PrismaService],

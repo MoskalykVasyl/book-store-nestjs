@@ -19,6 +19,7 @@ model User {
   role        UserRole @default(REGULAR)
 
   wishListItems WishListItem[]
+  orders        Order[]
 
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
@@ -46,6 +47,7 @@ model Book {
   authorId String
   
   wishListItems WishListItem[]
+  orderItems    OrderItem[]
 
   createdAt     DateTime       @default(now()) @map("created_at")
   updatedAt     DateTime       @updatedAt @map("updated_at")
@@ -94,4 +96,66 @@ model WishListItem {
   @@unique([userId, bookId])
   @@index([bookId])
   @@map("wish_list_items")
+}
+
+enum OrderStatus {
+  PENDING
+  CONFIRMED
+  SHIPPED
+  DELIVERED
+  CANCELLED
+}
+
+enum PaymentMethod {
+  CARD
+  CASH_ON_DELIVERY
+}
+
+model Order {
+  id String @id @default(uuid())
+
+  userId String @map("user_id")
+  user   User   @relation(fields: [userId], references: [id])
+
+  status        OrderStatus   @default(PENDING)
+  paymentMethod PaymentMethod @map("payment_method")
+  totalPrice    Int           @map("total_price")
+
+  fullName String  @map("full_name")
+  email    String
+  phone    String
+  city     String
+  address  String
+  comment  String?
+
+  items OrderItem[]
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@index([userId])
+  @@index([status])
+  @@index([createdAt])
+  @@map("orders")
+}
+
+model OrderItem {
+  id String @id @default(uuid())
+
+  orderId String @map("order_id")
+  order   Order  @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  // при видаленні книги позиція лишається в замовленні для історії та статистики
+  bookId String? @map("book_id")
+  book   Book?   @relation(fields: [bookId], references: [id], onDelete: SetNull)
+
+  // знімок книги на момент замовлення
+  title     String
+  genre     Genre
+  unitPrice Int    @map("unit_price")
+  quantity  Int
+
+  @@index([orderId])
+  @@index([bookId])
+  @@map("order_items")
 }
