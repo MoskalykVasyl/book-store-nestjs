@@ -1,7 +1,6 @@
 import {
   Body,
   Controller,
-  ForbiddenException,
   Get,
   HttpCode,
   HttpStatus,
@@ -17,15 +16,11 @@ import { Request, Response } from 'express';
 import { AuthRequest } from './types/interfaces';
 import { CurrentUser } from './decorators/current-user.decorators';
 import { JwtAuthGuard } from './guard/jwt-auth.guard';
-import { JwtService } from '@nestjs/jwt';
-
+import { REFRESH_TOKEN_COOKIE } from './constants';
 
 @Controller('auth')
 export class AuthController {
-  constructor(
-    private readonly authService: AuthService,
-    private jwtService: JwtService,
-  ) {}
+  constructor(private readonly authService: AuthService) {}
 
   @UseGuards(LocalAuthGuard)
   @Post('login')
@@ -34,7 +29,6 @@ export class AuthController {
     @Req() req: AuthRequest,
     @Res({ passthrough: true }) res: Response,
   ) {
-    console.log('req.user', req.user);
     return this.authService.login(res, req.user);
   }
 
@@ -46,37 +40,23 @@ export class AuthController {
     return this.authService.register(res, registerUserDto);
   }
 
-  @UseGuards(JwtAuthGuard)
-  @Get('logout')
-  async logout(
-    @Res({ passthrough: true }) res: Response,
-    @CurrentUser('id') userId: string,
-  ) {
-    return this.authService.logout(res, userId);
+  @Post('logout')
+  @HttpCode(HttpStatus.OK)
+  async logout(@Req() req: Request, @Res({ passthrough: true }) res: Response) {
+    const refreshToken = req.cookies?.[REFRESH_TOKEN_COOKIE] as
+      string | undefined;
+    return this.authService.logout(res, refreshToken);
   }
 
-  @Get('refresh-token')
+  @Post('refresh-token')
+  @HttpCode(HttpStatus.OK)
   async refresh(
     @Req() req: Request,
     @Res({ passthrough: true }) res: Response,
   ) {
-    const refreshToken = req.cookies?.['refresh_token'] as string | undefined;
-
-    if (!refreshToken) {
-      throw new ForbiddenException('No refresh token!');
-    }
-
-    const payload = this.jwtService.verify(refreshToken);
-
-    const tokens = await this.authService.refresh(payload.id, refreshToken);
-
-    res.cookie('refresh_token', tokens.refresh_token, {
-      httpOnly: true,
-      secure: true,
-      sameSite: 'none',
-      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
-    });
-    return { accessToken: tokens.access_token };
+    const refreshToken = req.cookies?.[REFRESH_TOKEN_COOKIE] as
+      string | undefined;
+    return this.authService.refresh(res, refreshToken);
   }
 
   @Get('me')
